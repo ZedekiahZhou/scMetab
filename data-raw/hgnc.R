@@ -1,0 +1,6 @@
+## code to prepare `hgnc` dataset goes here
+# hgnc_20210601.txt is download from "https://www.genenames.org/download/custom/" with "Select status"
+# only include "Approved" in Jun 1, 2021
+
+hgnc <- read.table("data-raw/hgnc_20210601.txt", sep = "\t", header = T, comment.char = "", quote = "")
+usethis::use_data(hgnc, overwrite = TRUE)
