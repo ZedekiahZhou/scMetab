@@ -22,11 +22,11 @@ Update previous gene symbols to up-to-date approved gene symbols, return a trans
 }
 \details{
 Gene symbols are updated according to "hgnc_20210601.txt" file download from HGNC database (custom downloads).
-Previous symbols are updated, approved symbols are preserved, unmatched symbols are translate to "".
+Previous symbols are updated, approved symbols are preserved, unmatched symbols are also preserved.
 
 Input symbols are matched against approved symbols first, unmatched ones are then matched against previous
-symbols. Symbols left unmatched finally were translate to "". Alias symbols were not under consideration
-to reduce multi-mapping which is confused.
+symbols. Symbols left unmatched finally were also preserved, but matched status were recorded.
+Alias symbols were not under consideration to reduce multi-mapping which is confused.
 
 If a previous symbol match to multiple approved symbols, or multiple previous symbols match to an approved
 symbol, the first match will be kept according to the alphabetical order of approved symbols.
