@@ -15,19 +15,21 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Depends: 
-    R (>= 2.10),
-    tidyverse, 
-    Seurat
+    R (>= 2.10)
 Imports: 
     readxl,
     dplyr,
     stringr,
     tidyr,
+    Seurat,
     SeuratObject,
+    scde,
     Matrix,
     magrittr,
     pagoda2,
     AUCell,
     GSVA,
     ggplot2,
-    ggpubr
+    ggpubr,
+    utils,
+    rlang

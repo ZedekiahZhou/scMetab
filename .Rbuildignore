@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^LICENSE\.md$
+^test$
+^data-raw/tnbc.merged.rds$
+^data-raw/tnbc.merged.SCT.rds$

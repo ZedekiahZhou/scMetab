@@ -18,11 +18,11 @@
 #' - original: original symbols of the same length and order as input
 #' - updated: updated symbols:
 #' - type: symbols was matched to approved symbols, previous symbols, or deleted
-#' @import Seurat
-#' @import tidyverse
+#'
 #' @importFrom magrittr %>%
 #' @importFrom dplyr filter
 #' @importFrom tidyr separate_rows
+#' @importFrom rlang .data
 #' @export
 #'
 #' @examples
@@ -33,19 +33,19 @@ getUpdatedSymbols <- function(geneSymbols) {
     geneSymbols <- unique(geneSymbols)
     geneSymbols <- geneSymbols[!is.na(geneSymbols)]
 
-    hgnc.previous <- hgnc %>% separate_rows(Previous.symbols, sep = ", ")
-    hgnc.previous <- hgnc.previous %>% filter(Previous.symbols != "")
+    hgnc.previous <- hgnc %>% separate_rows(.data$Previous.symbols, sep = ", ")
+    hgnc.previous <- hgnc.previous %>% filter(.data$Previous.symbols != "")
 
     approved <- geneSymbols[geneSymbols %in% hgnc$Approved.symbol] # approved symbol
 
     not.approved <- setdiff(geneSymbols, approved) # not approved symbol
     previous <- hgnc.previous %>%
-        filter(Previous.symbols %in% not.approved) %>% # update previous symbol in not approved symbols
-        filter(!(Approved.symbol %in% approved)) # remove symbols which mismatch to already approved ones
+        filter(.data$Previous.symbols %in% not.approved) %>% # update previous symbol in not approved symbols
+        filter(!(.data$Approved.symbol %in% approved)) # remove symbols which mismatch to already approved ones
     previous <- previous[order(previous$Approved.symbol, previous$Previous.symbols), ]
     previous <- previous %>%
-        filter(!duplicated(Approved.symbol)) %>%
-        filter(!duplicated(Previous.symbols)) # filter multi-map
+        filter(!duplicated(.data$Approved.symbol)) %>%
+        filter(!duplicated(.data$Previous.symbols)) # filter multi-map
 
     # combine approved and previous symbol
     approved <- data.frame(original = approved, updated = approved,
@@ -79,7 +79,7 @@ getUpdatedSymbols_searat <- function(seu_obj) {
     message("Note: only raw count and meta.data will be preserved!")
 
     # get counts and meta.data
-    counts <- GetAssayData(seu_obj, slot = "counts", assay = "RNA")
+    counts <- SeuratObject::GetAssayData(seu_obj, slot = "counts", assay = "RNA")
     meta.data <- seu_obj@meta.data
 
     # update gene symbol

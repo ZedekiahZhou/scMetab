@@ -3,4 +3,5 @@
 # only include "Approved" in Jun 1, 2021
 
 hgnc <- read.table("data-raw/hgnc_20210601.txt", sep = "\t", header = T, comment.char = "", quote = "")
-usethis::use_data(hgnc, overwrite = TRUE)
+hgnc <- hgnc[, c("Approved.symbol", "Previous.symbols")]
+usethis::use_data(hgnc, overwrite = TRUE, internal = TRUE)
