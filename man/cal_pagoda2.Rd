@@ -2,7 +2,8 @@
 % Please edit documentation in R/pas.R
 \name{cal_pagoda2}
 \alias{cal_pagoda2}
-\title{Using PAGODA2 to Calculate Pathway Activity Scores}
+\title{Functions using different pathway activity scoring methods.
+Using Modified PAGODA2 to Calculate Pathway Activity Scores}
 \usage{
 cal_pagoda2(data, glist, n_cores)
 }
@@ -17,5 +18,6 @@ cal_pagoda2(data, glist, n_cores)
 A data frame of pathway activity scores, with cells in rows and pathways in columns.
 }
 \description{
-Using PAGODA2 to Calculate Pathway Activity Scores
+Note::Default Pagoda2 method testPathwayOverdispersion was modified to testPathwayOverdispersion2, so
+all input pathway scores (not just significant pathways) could be calculated.
 }

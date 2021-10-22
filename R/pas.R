@@ -1,12 +1,19 @@
-### pagoda2 pathway
-#' Using PAGODA2 to Calculate Pathway Activity Scores
+# =========================================================================
+#### Several Pathway Activity Score (PAS) Methods
+# =========================================================================
+#' Functions using different pathway activity scoring methods.
+
+### modified pagoda2 pathway
+#' Using Modified PAGODA2 to Calculate Pathway Activity Scores
+#'
+#' Note::Default Pagoda2 method testPathwayOverdispersion was modified to testPathwayOverdispersion2, so
+#' all input pathway scores (not just significant pathways) could be calculated.
 #'
 #' @param data normalized count matrix
 #' @param glist gene set list
 #' @param n_cores number of cores to used
 #'
 #' @return A data frame of pathway activity scores, with cells in rows and pathways in columns.
-#' @importFrom pagoda2 Pagoda2
 #' @export
 cal_pagoda2 <- function(data,   # normalized count matrix
                         glist,  # gene set list
@@ -16,15 +23,57 @@ cal_pagoda2 <- function(data,   # normalized count matrix
     message(paste("Begin calculating pagoda2 score at", start_time))
 
     # pre-processing
-    p2 <- Pagoda2$new(data, n.cores = n_cores, log.scale = FALSE)
+    mod_p2 <- mod_Pagoda2$new(data, n.cores = n_cores, log.scale = FALSE)
+    mod_p2$adjustVariance(plot = F)
+    # p2$calculatePcaReduction(nPCs = 5, use.odgenes = FALSE, fastpath = FALSE)
+
+    # get pathway pca
+    kegg.env <- list2env(glist)
+    mod_p2$testPathwayOverdispersion2(setenv = kegg.env, verbose = T,
+                                 recalculate.pca = T, return.table = F,
+                                 min.pathway.size = 1, max.pathway.size = 1000)
+
+    # un-significant pathway were null, remove it
+    path_scores <- sapply(names(glist), function(i) {mod_p2$misc$pwpca[[i]]$xp$scores})
+    # path_scores <- path_scores[!sapply(path_scores, is.null)]
+    # path_scores <- sapply(path_scores, identity)
+    rownames(path_scores) <- colnames(data)
+
+    stop_time <- Sys.time()
+    time_used <- stop_time - start_time
+    message(paste0("Calculating pagoda2 score complete at ", stop_time,
+                   ", using ", round(time_used, digits = 2), " ", units(time_used)))
+    tmpgc <- gc()
+
+    return(as.data.frame(path_scores))
+}
+
+### pagoda2 pathway
+#' Using Default PAGODA2 to Calculate Pathway Activity Scores
+#'
+#' @param data normalized count matrix
+#' @param glist gene set list
+#' @param n_cores number of cores to used
+#'
+#' @return A data frame of pathway activity scores, with cells in rows and pathways in columns.
+#' @export
+cal_default_pagoda2 <- function(data,   # normalized count matrix
+                                glist,  # gene set list
+                                n_cores # number of cores to used
+) {
+    start_time <- Sys.time()
+    message(paste("Begin calculating pagoda2 score at", start_time))
+
+    # pre-processing
+    p2 <- pagoda2::Pagoda2$new(data, n.cores = n_cores, log.scale = FALSE)
     p2$adjustVariance(plot = F)
-    p2$calculatePcaReduction(nPCs = 5, use.odgenes = FALSE, fastpath = FALSE)
+    # p2$calculatePcaReduction(nPCs = 5, use.odgenes = FALSE, fastpath = FALSE)
 
     # get pathway pca
     kegg.env <- list2env(glist)
     p2$testPathwayOverdispersion(setenv = kegg.env, verbose = T,
                                  recalculate.pca = T, return.table = F,
-                                 min.pathway.size = 1)
+                                 min.pathway.size = 1, max.pathway.size = 1000)
 
     # un-significant pathway were null, remove it
     path_scores <- sapply(names(glist), function(i) {p2$misc$pwpca[[i]]$xp$scores})
@@ -40,7 +89,6 @@ cal_pagoda2 <- function(data,   # normalized count matrix
 
     return(as.data.frame(path_scores))
 }
-
 
 ## pagoda
 #' Using PAGODA to Calculate Pathway Activity Scores
