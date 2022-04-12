@@ -24,6 +24,6 @@ Generated using Table S2 (save as "data-raw/Reactome_metab_TableS2.xlsx") from t
 }
 \details{
 Note: There \strong{are} duplicated genes in different pathway. Out-of-date gene symbols were updated
-by \code{getUpdatedSymbols()}
+by \code{update_symbols()}
 }
 \keyword{datasets}

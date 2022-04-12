@@ -4,7 +4,7 @@
 
 library(rjson)
 library(stringr)
-kegg <- fromJSON(file = "data-raw/hsa00001.json")
+kegg <- fromJSON(file = "data-raw/keggMetabDf/hsa00001.json")
 
 # # the first element if metabolism
 metab <- kegg$children[[1]]
@@ -66,3 +66,21 @@ keggMetabDf <- keggMetabDf %>%
     filter(n() > 1)
 
 usethis::use_data(keggMetabDf, overwrite = TRUE)
+
+
+# 6. construct super pathways
+Cate2Path <- data.frame(Category = c("Carbohydrate metabolism", "Energy metabolism", "Lipid metabolism",
+                                     "Nucleotide metabolism", "Amino acid metabolism", "Glycan biosynthesis and metabolism",
+                                     "Metabolism of cofactors and vitamins", "Metabolism of terpenoids and polyketides",
+                                     "Biosynthesis of other secondary metabolites", "Xenobiotics biodegradation and metabolism"),
+                        Pathway = paste0("KEGG: ",
+                                         c("Carbohydrate", "Energy", "Lipid",
+                                           "Nucleotide", "Amino acid", "Glycan",
+                                           "Cofactors and vitamins", "Terpenoids and polyketides",
+                                           "Other secondary metabolites", "Xenobiotics")))
+keggMetabDfSuper <- keggMetabDf %>%
+    select(Category, GeneSymbol) %>%
+    mutate(Pathway = Cate2Path$Pathway[match(Category, Cate2Path$Category)]) %>%
+    group_by(Pathway) %>%
+    filter(!duplicated(GeneSymbol))
+usethis::use_data(keggMetabDfSuper, overwrite = TRUE)

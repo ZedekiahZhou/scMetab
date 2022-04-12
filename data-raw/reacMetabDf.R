@@ -7,11 +7,12 @@
 # tricarboxylic acid cycle (TCA cycle, 148 genes) and vitamin & cofactor metabolism (168 genes).
 # Table S2 of [Peng et al., 2018] was download as "data-raw/Reactome_metab_TableS2.xlsx"
 
-reac_list <- lapply(1:7, readxl::read_xlsx, path = "data-raw/Reactome_metab_TableS2.xlsx", skip = 1)
+reac_list <- lapply(1:7, readxl::read_xlsx, path = "data-raw/reacMetabDf/Reactome_metab_TableS2.xlsx", skip = 1)
 reac <- do.call(rbind, reac_list)
 
-trans.table <- getUpdatedSymbols(reac$Genes)
+trans.table <- update_symbols(reac$Genes)
 table(trans.table$type)
 
 reacMetabDf <- data.frame(GeneSymbol = trans.table$updated, Pathway = reac$Pathway)
+reacMetabDf$Pathway <- paste0("Reactome: ", reacMetabDf$Pathway)
 usethis::use_data(reacMetabDf, overwrite = TRUE)

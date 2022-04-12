@@ -26,7 +26,7 @@
 #' @export
 #'
 #' @examples
-#' getUpdatedSymbols(c("KRAS2", "DUSP2", NA))
+#' update_symbols(c("KRAS2", "DUSP2", NA))
 update_symbols <- function(gene_symbols) {
 
     dup_gene_symbols <- gene_symbols
@@ -71,20 +71,25 @@ update_symbols <- function(gene_symbols) {
 #' Seurat do not allowed renaming features, so get counts data out, rename it and reconstructed seurat object.
 #'
 #' @param seu_obj Input seurat object
+#' @param out_dir output dir for gene symbol updated table
 #'
 #' @return seurat object with gene symbols updated.
 #' @export
 #'
-update_symbols_searat <- function(seu_obj) {
+update_symbols_seurat <- function(seu_obj, out_dir = "res/") {
     message("Note: only raw count and meta.data will be preserved!")
 
     # get counts and meta.data
+    if (!dir.exists(out_dir)) dir.create(out_dir)
+
     counts <- SeuratObject::GetAssayData(seu_obj, slot = "counts", assay = "RNA")
     meta.data <- seu_obj@meta.data
 
     # update gene symbol
     trans.table <- update_symbols(rownames(counts))
     rownames(counts) <- trans.table$updated
+    utils::write.table(trans.table, file = file.path(out_dir, "Gene_symbol_updated_table.tsv"),
+                       quote = F, sep = "\t", row.names = F)
 
     # return re-constructed seurat object
     return(SeuratObject::CreateSeuratObject(counts = counts, meta.data = meta.data))

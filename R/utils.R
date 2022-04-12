@@ -1,142 +1,197 @@
-## Filter Genes with High Drop-out Rate
-#
-#' Filter Genes with High Drop-out Rate
+#' Sample Cell Pairs for Comparison
 #'
-#' @param seu_obj input seurat object
-#' @param percent_min minimum proportion of cells expressing a gene, default is 5, means 5% of cells.
-#' Genes expressed in less than ncol(seu_obj) * percent_min / 100 cells will be removed.
+#' Down sample cell pairs from inter-group and intra-group for comparison
 #'
-#' @return a seurat object with high drop-out genes removed.
+#' @param seu_obj seurat object
+#' @param group.by variables to group cells, cell from inter-group and intra-group will be compared
+#' @param split.by variables to split cells, cells will be split first and then grouped individually
+#' @param sample_type weather to sample inter-group cells or intra-group cells, default is both
+#' @param n number of cell pairs for each split
+#' @param seed.use seed used for subsample
+#'
+#' @return a data.frame of select cell pairs
 #' @export
 #'
-filter_genes <- function(seu_obj,
-                         percent_min = 5
+sample_cell_pairs <- function(seu_obj,
+                         group.by = "patientID",
+                         split.by = "celltype",
+                         sample_type = c("inter", "intra"),
+                         n = 1000,
+                         seed.use = NULL
 ) {
-    message("Caution: If there is SCT assay in your seurat object, it will be removed! You should re-run
-            Seurat::sctransform() due to the change of library size.")
-    SeuratObject::DefaultAssay(seu_obj) <- "RNA"
-    if (!is.null(seu_obj@assays$SCT)) seu_obj[["SCT"]] <- NULL
-
-    counts <- SeuratObject::GetAssayData(seu_obj, slot = "counts", assay = "RNA") > 0
-    nCells <- Matrix::rowSums(counts)
-    seu_obj <- seu_obj[nCells >= ncol(seu_obj) * percent_min / 100, ]
-    print(paste("There were", nrow(counts), "genes before filtering, and", nrow(seu_obj), "left after filtering."))
-    gc()
-    return(seu_obj)
-}
-
-
-#' Clean Gene List
-#'
-#' Filter gene list according to genes expressed (in your count matrix), you should run filter_genes() first!
-#'
-#' @param expressed.gene genes expressed in your count matrix, can be `rownames(norm.data)`
-#' @param used.gsets A data.frame, gene sets to be cleaned, can be keggMetabDf or reacMetabDf. You can also provide genes sets
-#' by yourself, make sure each row represents a genes, and columns "GeneSymbol" (up-to-date HGNC symbols) and
-#' "Pathway" (Pathway names) are included.
-#' @param min.size gene sets with genes less than min.size will be removed
-#' @param suffix logical, whether to add gene set size as suffix to gene set name, default is TRUE
-#'
-#' @return a list object, each element represents a cleaned gene sets.
-#' @export
-#'
-clean_glist <- function(expressed.gene,
-                        used.gsets,
-                        min.size = 5,
-                        suffix = TRUE
-) {
-    glist <- split(used.gsets$GeneSymbol, f = used.gsets$Pathway)
-    glist.filtered <- sapply(glist, function(x) x[x %in% expressed.gene])
-
-    gset_len <- sapply(glist.filtered, length)
-    if (suffix) {
-        names(glist.filtered) <- paste0(names(glist.filtered), " (", gset_len, ")")
+    if (length(setdiff(sample_type, c("inter", "intra"))) > 0) {
+        stop(paste0("sample_type '", sample_type, "' not support!"))
     }
-    glist.filtered <- glist.filtered[gset_len >= min.size]
 
-    print("Note:")
-    print(paste("There were", length(unique(used.gsets$GeneSymbol)), "metab genes and",
-                length(expressed.gene), "expressed genes."))
-    print(paste("After filtered,", length(unique(unlist(glist.filtered))), "expressed metab genes keeped!"))
-    return(glist.filtered)
-}
-
-
-
-### plot function
-#' Title
-#'
-#' @param pas a list containing different type of pathway activity score
-#' @param meta.data a data.frame containing metadata of cells
-#' @param out.dir output directory for plot file
-#'
-#' @importFrom grDevices dev.off pdf
-#' @importFrom rlang .data
-#' @export
-#'
-plotPath_x_libsize <- function(pas,
-                               meta.data,
-                               out.dir) {
-    if (is.null(pas.tools)) {
-        pas.tools <- names(pas)
-    }
-    if (is.null(out.dir)) {
-        stop("You should specify output directory!")
-    }
-    for (tools in pas.tools) {
-        pdf(paste0(out.dir, "/", tools, ".pdf"))
-        df <- merge(pas[[tools]], meta.data, by = "row.names")
-        for (pathway in colnames(pas[[tools]])) {
-            print(ggpubr::ggscatter(df, x = pathway, y = .data$libsize_type,
-                            add = "reg.line", conf.int = TRUE,
-                            add.params = list(fill = "red3")) +
-                      ggpubr::stat_cor(method = "spearman"))
-        }
-        dev.off()
-    }
-}
-
-
-#' Pathway-Pathway Plot from Different PAS Methods
-#'
-#'
-#'
-#' @param pas a list containing different type of pathway activity score
-#' @param out.dir output directory for plot file
-#' @param group.by variable used to group data points
-#'
-#' @export
-#'
-plotPath_x_Path <- function(pas,
-                            out.dir = NULL,
-                            group.by = NULL
-) {
-    cellname <- rownames(pas[[1]])
-    if (is.null(group.by)) {
-        color = "black"
+    if (is.null(seed.use)) {
+        set.seed(NULL)
     } else {
-        color = group.by
+        withr::local_seed(seed.use)
     }
 
-    for (i in 1:(length(pas)-1)) {
-        for (j in (i+1):length(pas)) {
-            pdf(paste0(out.dir, "/", names(pas)[i], "_x_", names(pas)[j], ".pdf"))
-            con_path <- intersect(colnames(pas[[i]]), colnames(pas[[j]]))
-            for (pathway in con_path) {
-                df <- data.frame(tools1 = pas[[i]][, pathway], tools2 = pas[[j]][, pathway], color = color)
-                print(ggpubr::ggscatter(df, x = "tools1", y = "tools2",
-                                        color = "color",
-                                        add = "reg.line", conf.int = TRUE,
-                                        add.params = list(fill = "red3"),
-                                        xlab = names(pas)[i], ylab = names(pas)[j]) +
-                          ggpubr::stat_cor(method = "spearman") +
-                          ggplot2::ggtitle(pathway))
+    cellinfo <- seu_obj[[c(group.by, split.by)]]
+    res <- data.frame()
+
+    for (used_split in unique(cellinfo[[split.by]])) {
+        sub_cells <- rownames(cellinfo)[cellinfo[[split.by]] == used_split]
+        sub_cellinfo <- cellinfo[sub_cells, group.by, drop = TRUE]
+        names(sub_cellinfo) <- sub_cells
+
+        inter_cells <- data.frame() -> intra_cells
+
+        if ("inter" %in% sample_type) {
+            for (i in 1:n) {
+                cell1 <- sample(sub_cells, 1)
+                heters <- sub_cells[sub_cellinfo != sub_cellinfo[cell1]]
+                cell2 <- sample(heters, 1)
+                inter_cells <- rbind(inter_cells, data.frame(cell1 = cell1, cell2 = cell2,
+                                                             cell1.group = sub_cellinfo[cell1],
+                                                             cell2.group = sub_cellinfo[cell2]))
             }
-            dev.off()
+            inter_cells$pair <- "inter"
         }
 
+        if ("intra" %in% sample_type) {
+            sub_cells_rmUnique <- sub_cells[sub_cellinfo %in% sub_cellinfo[duplicated(sub_cellinfo)]]
+            for (i in 1:n) {
+                cell1 <- sample(sub_cells_rmUnique, 1)
+                homos <- setdiff(sub_cells[sub_cellinfo == sub_cellinfo[cell1]], cell1)
+                cell2 <- sample(homos, 1)
+                intra_cells <- rbind(intra_cells, data.frame(cell1 = cell1, cell2 = cell2,
+                                                             cell1.group = sub_cellinfo[cell1],
+                                                             cell2.group = sub_cellinfo[cell2]))
+            }
+            intra_cells$pair <- "intra"
+        }
+
+        cells <- rbind(inter_cells, intra_cells)
+        cells$split.by = used_split
+        res <- rbind(res, cells)
+    }
+    return(res)
+}
+
+
+
+#' Feature Percent by Group
+#'
+#' Calculate percent of each cells group which expressed specific features
+#'
+#' @param seu_obj a seurat object
+#' @param assay Which assays to use, default is `Seaurat::DefaultAssay(seu_obj)`
+#' @param features features to calculate percent, default is all features in the assay
+#' @param group.by Categories for grouping, default is not grouping, calculate the percent of whole dataset.
+#' @param threshold threshold to detect expressed genes, default is 0
+#'
+#' @return a matrix of percents with row as features and column as groups
+#' @export
+#'
+ClusterPercent <- function(seu_obj,
+                           assay = NULL,
+                           features = NULL,
+                           group.by = NULL,
+                           threshold = 0)
+{
+    if (!is.null(assay)) Seurat::DefaultAssay(seu_obj) <- assay
+
+    if (is.null(features)) features = rownames(seu_obj)
+
+    if (is.null(group.by)) {
+        seu_obj$whole <- "Seurat"
+        group.by = "whole"
+    }
+
+    # PercentAbove <- function(x, threshold) {
+    #     return(length(x = x[x > threshold]) / length(x = x))
+    # }
+
+    data.features <- Seurat::GetAssayData(seu_obj[features, ], slot = "counts")
+
+    data.plot <- sapply(X = unique(x = seu_obj[[group.by]][[1]]),
+                        FUN = function(ident)
+    {
+        data.use <- data.features[, colnames(seu_obj)[seu_obj[[group.by]][[1]] == ident]]
+        pct.exp <- Matrix::rowMeans(data.use > threshold)
+            # apply(X = data.use, MARGIN = 1, FUN = PercentAbove,
+            #              threshold = 0)
+        return((pct.exp))
+        suppressMessages(gc())
+    })
+}
+
+
+
+#' Jaccard Distance of Two Gene Sets
+#'
+#' @param x gene sets 1 (gs1)
+#' @param y gene sets 2 (gs2)
+#'
+#' @return distance in \[0, 1\]
+#' @export
+#'
+#' @examples
+#' jaccard_dist(c("PTEN", "TP53"), c("PTEN", "DUSP2"))
+jaccard_dist <- function(x, y) {
+    a <- intersect(x, y)
+    b <- union(x, y)
+    if (length(b) == 0) {
+        return(1)
+    } else {
+        return(1 - length(a)/length(b))
     }
 }
 
 
 
+#' Pathway Correlation and P Value
+#'
+#' @param seu_obj a Seuat object with an assay stored pathway activity score (PAS)
+#' @param assay assay name of PAS, default is "AUCell"
+#' @param features pathways to calculate pair-wise correlation
+#' @param cor_method one of "spearman" or "pearson", default is "spearman"
+#' @param glist gene set list to correspond to PAS, used to calculate pathway distance
+#'
+#'
+#' @return A list containing the following components:
+#' r    the matrix of correlations
+#' n    the matrix of number of observations used in analyzing each pair f variables
+#' P    the asymptotic P-values
+#' dist the matrix of jaccard distance
+#' radj correlations adjusted by dist
+#' padj adjusted P-values
+#' @export
+pathway_correlation <- function(seu_obj,
+                                assay = "AUCell",
+                                features = NULL,
+                                cor_method = "spearman",
+                                glist =NULL
+) {
+    Seurat::DefaultAssay(seu_obj) <- assay
+
+    df <- Seurat::FetchData(seu_obj, vars = features)
+
+    # pathway correlation and P-values
+    res <- Hmisc::rcorr(as.matrix(df), type = cor_method)
+
+    cell_meta <- setdiff(features, names(glist))
+
+    if (!is.null(cell_meta)) {
+        tmp <- vector("list", length = length(cell_meta))
+        names(tmp) <- cell_meta
+        glist <- c(glist, tmp)
+    }
+
+    # pathway dist
+    res$dist <- sapply(glist, function(x) {
+        sapply(glist, function(y) jaccard_dist(x, y))
+    })
+
+    # adjust R by dist
+    res$radj <- res$r * res$dist
+
+    # adjust p values
+    padj <- stats::p.adjust(res$P, method = "BH")
+    res$padj <- matrix(padj, ncol = ncol(res$P), dimnames = dimnames(res$P))
+
+    return(res)
+}

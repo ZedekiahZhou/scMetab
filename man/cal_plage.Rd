@@ -4,7 +4,7 @@
 \alias{cal_plage}
 \title{Using PLAGE to Calculate Pathway Activity Scores}
 \usage{
-cal_plage(data, glist, n_cores)
+cal_plage(data, glist, n_cores = 4, seed.use = NULL)
 }
 \arguments{
 \item{data}{normalized count matrix}
@@ -12,6 +12,8 @@ cal_plage(data, glist, n_cores)
 \item{glist}{gene set list}
 
 \item{n_cores}{number of cores to used}
+
+\item{seed.use}{not used}
 }
 \value{
 A data frame of pathway activity scores, with cells in rows and pathways in columns.

@@ -45,6 +45,26 @@
 "keggMetabDf"
 
 
+#' @title
+#' Metabolic Genes and Super Pathways from KEGG
+#'
+#' @description
+#' A dataset containing metabolic genes information from KEGG metabolic pathways, generated from
+#' "data-raw/hsa00001.json" files downloaded from KEGG website, which include all kegg pathway info of homo sapiens.
+#'
+#' Note: use categories as super pathways
+#'
+#' @details
+#' Note: There **are** duplicated genes in different super pathway.
+#'
+#' @format A data frame with 2958 rows and 10 variables:
+#' \describe{
+#'   \item{Category}{KEGG categories}
+#'   \item{Pathway}{KEGG super pathway name}
+#'   \item{GeneSymbol}{HGNC gene symbol}
+#' }
+"keggMetabDfSuper"
+
 
 #' @title
 #' Metabolic Genes and Pathways from Reactome
@@ -59,7 +79,7 @@
 #'
 #' @details
 #' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
-#' by `getUpdatedSymbols()`
+#' by `update_symbols()`
 #'
 #' @format A data frame with 1916 rows and 2 variables:
 #' \describe{
@@ -67,3 +87,68 @@
 #'   \item{Pathway}{belong to which one of 7 super pathways}
 #' }
 "reacMetabDf"
+
+
+#' @title
+#' Metabolic Genes and Pathways from Gaude et. al.
+#'
+#' @description
+#' Manually curated metabolic pathways from Gaude et. al. (https://www.nature.com/articles/ncomms13041#Sec7)
+#'
+#' @details
+#' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
+#' by `update_symbols()`
+#'
+#' @format A data frame with 1932 rows and 2 variables:
+#' \describe{
+#'   \item{GeneSymbol}{Gene symbol}
+#'   \item{Pathway}{Pathway name}
+#' }
+"gaudeMetabDf"
+
+
+#' @title
+#' Cancer Hallmark Genes and Pathways from MSigDB.
+#'
+#' @description
+#' Cancer Hallmark Genes and Pathways from MSigDB.
+#' `HallmarksDf` contains all MSigDB hallmark gene sets
+#' `cancerHallmarksDf` contains 6 cancer hallmarks and mTORC1 signaling pathway
+#'
+#' @details
+#' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
+#' by `update_symbols()`
+#'
+#' @format
+#' \describe{
+#'   \item{GeneSymbol}{Gene symbol}
+#'   \item{Pathway}{Pathway name}
+#' }
+"HallmarksDf"
+"cancerHallmarksDf"
+
+#' @title
+#' Human Transcriptional Factor Coding Genes
+#'
+#' @description
+#' 1839 genes, with symbols updated use upadted_symbols()
+#'
+"TFgenes"
+
+
+#' @title
+#' Immune Genes
+#'
+#' @description
+#' Immune Genes
+#'
+#' @details
+#' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
+#' by `update_symbols()`
+#'
+#' @format
+#' \describe{
+#'   \item{GeneSymbol}{Gene symbol}
+#'   \item{Pathway}{Pathway name}
+#' }
+"immuneDf"

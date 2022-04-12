@@ -32,5 +32,5 @@ If a previous symbol match to multiple approved symbols, or multiple previous sy
 symbol, the first match will be kept according to the alphabetical order of approved symbols.
 }
 \examples{
-getUpdatedSymbols(c("KRAS2", "DUSP2", NA))
+update_symbols(c("KRAS2", "DUSP2", NA))
 }

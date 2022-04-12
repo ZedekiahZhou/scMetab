@@ -2,10 +2,9 @@
 % Please edit documentation in R/pas.R
 \name{cal_pagoda2}
 \alias{cal_pagoda2}
-\title{Functions using different pathway activity scoring methods.
-Using Modified PAGODA2 to Calculate Pathway Activity Scores}
+\title{Using Modified PAGODA2 to Calculate Pathway Activity Scores}
 \usage{
-cal_pagoda2(data, glist, n_cores)
+cal_pagoda2(data, glist, n_cores = 4, seed.use = NULL)
 }
 \arguments{
 \item{data}{normalized count matrix}
@@ -13,6 +12,8 @@ cal_pagoda2(data, glist, n_cores)
 \item{glist}{gene set list}
 
 \item{n_cores}{number of cores to used}
+
+\item{seed.use}{not used}
 }
 \value{
 A data frame of pathway activity scores, with cells in rows and pathways in columns.
