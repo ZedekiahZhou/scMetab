@@ -10,6 +10,7 @@
 #' @param seed.use seed used for subsample
 #'
 #' @return a data.frame of select cell pairs
+#' @import RColorBrewer dplyr
 #' @export
 #'
 sample_cell_pairs <- function(seu_obj,
@@ -148,6 +149,7 @@ jaccard_dist <- function(x, y) {
 #' @param seu_obj a Seuat object with an assay stored pathway activity score (PAS)
 #' @param assay assay name of PAS, default is "AUCell"
 #' @param features pathways to calculate pair-wise correlation
+#' @param df provide a data frame of pathway scores instead of a seurat object
 #' @param cor_method one of "spearman" or "pearson", default is "spearman"
 #' @param glist gene set list to correspond to PAS, used to calculate pathway distance
 #'
@@ -160,21 +162,29 @@ jaccard_dist <- function(x, y) {
 #' radj correlations adjusted by dist
 #' padj adjusted P-values
 #' @export
-pathway_correlation <- function(seu_obj,
+pathway_correlation <- function(seu_obj = NULL,
                                 assay = "AUCell",
                                 features = NULL,
+                                df = NULL,
                                 cor_method = "spearman",
                                 glist =NULL
 ) {
-    Seurat::DefaultAssay(seu_obj) <- assay
-
-    df <- Seurat::FetchData(seu_obj, vars = features)
+    if (!is.null(seu_obj) & is.null(df)) {
+        Seurat::DefaultAssay(seu_obj) <- assay
+        if (is.null(features)) features <- rownames(seu_obj)
+        df <- Seurat::FetchData(seu_obj, vars = features)
+    } else if (is.null(seu_obj) & !is.null(df)) {
+        if (is.null(features)) features <- colnames(df)
+        df <- df[, features]
+    } else {
+        stop("You must provide either seu_obj or df!")
+    }
 
     # pathway correlation and P-values
     res <- Hmisc::rcorr(as.matrix(df), type = cor_method)
 
+    # if not all features are gene sets or glist not provided
     cell_meta <- setdiff(features, names(glist))
-
     if (!is.null(cell_meta)) {
         tmp <- vector("list", length = length(cell_meta))
         names(tmp) <- cell_meta

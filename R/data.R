@@ -1,24 +1,4 @@
 #' @title
-#' Approved HGNC Gene Symbols
-#'
-#' @description
-#' A dataset containing the HGNC gene symbol information, which is download from
-#' "https://www.genenames.org/download/custom/" with "Select status" only include "Approved"
-#' in Jun 1, 2021, saved as "data-raw/hgnc_20210601.txt"
-#'
-#' @format A data frame with 42571 rows and 9 variables:
-#' \describe{
-#'   \item{Approved.symbol}{The official gene symbol that has been approved by the HGNC and is publicly available.
-#'   Symbols are approved based on specific HGNC nomenclature guidelines. }
-#'   \item{Previous.symbols}{Symbols previously approved by the HGNC for this gene.
-#'   This field can contain multiple values as a comma delimited list.}
-#' }
-#' @source \url{https://www.genenames.org/download/custom/}
-"hgnc"
-
-
-
-#' @title
 #' Metabolic Genes and Pathways from KEGG
 #'
 #' @description
@@ -106,6 +86,10 @@
 #' }
 "gaudeMetabDf"
 
+#' @title
+#' Translate Gaude metabolic pathways to lower case (capitalized)
+
+"gaude_trans"
 
 #' @title
 #' Cancer Hallmark Genes and Pathways from MSigDB.
@@ -125,6 +109,8 @@
 #'   \item{Pathway}{Pathway name}
 #' }
 "HallmarksDf"
+
+#' @rdname HallmarksDf
 "cancerHallmarksDf"
 
 #' @title
@@ -134,6 +120,31 @@
 #' 1839 genes, with symbols updated use upadted_symbols()
 #'
 "TFgenes"
+
+
+#' @title
+#' Colors for Different Cell Type
+#'
+#' @description
+#' used for plot
+#'
+"celltype_color"
+
+#' @title
+#' Colors for Different datasets
+#'
+#' @description
+#' used for plot
+#'
+"dataset_color"
+
+#' @title
+#' Colors for Tumor and Normal
+#'
+#' @description
+#' used for plot
+#'
+"TvN_color"
 
 
 #' @title
@@ -152,3 +163,49 @@
 #'   \item{Pathway}{Pathway name}
 #' }
 "immuneDf"
+
+
+#' @title
+#' Signature Genes of T Cell Subtype
+#'
+#' @description
+#' This data frame contains top 50 signature genes for each T cell subtype identified by Zheng et al. They identified 17 CD8+ and
+#' 24 CD4+ metaclusters and corresponding signatures.
+#'
+#' @details
+#' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
+#' by `update_symbols()`
+#'
+#' @format
+#' \describe{
+#'   \item{GeneSymbol}{Gene symbol}
+#'   \item{Pathway}{Pathway name}
+#' }
+#'
+#' @references
+#' Zheng, L. et al. Pan-cancer single-cell landscape of tumor-infiltrating T cells. Science (2021) doi:10.1126/science.abe6474.
+#'
+"tcellSig"
+
+
+#' @title
+#' Signature Genes of Myeloid
+#'
+#' @description
+#' This data frame contains signatures of myeloid subtype identified by Cheng et al.
+#'
+#' @details
+#' Note: There **are** duplicated genes in different pathway. Out-of-date gene symbols were updated
+#' by `update_symbols()`
+#'
+#' @format
+#' \describe{
+#'   \item{GeneSymbol}{Gene symbol}
+#'   \item{Pathway}{Pathway name}
+#' }
+#'
+#' @references
+#' Cheng, L. et al. A pan-cancer single-cell transcriptional atlas of tumor infiltrating myeloid cells. Cell (2021)
+#' doi:10.1016/j.cell.2021.01.010
+#'
+"myeloidSig"

@@ -82,7 +82,7 @@ update_symbols_seurat <- function(seu_obj, out_dir = "res/") {
     # get counts and meta.data
     if (!dir.exists(out_dir)) dir.create(out_dir)
 
-    counts <- SeuratObject::GetAssayData(seu_obj, slot = "counts", assay = "RNA")
+    counts <- Seurat::GetAssayData(seu_obj, slot = "counts", assay = "RNA")
     meta.data <- seu_obj@meta.data
 
     # update gene symbol
@@ -92,5 +92,5 @@ update_symbols_seurat <- function(seu_obj, out_dir = "res/") {
                        quote = F, sep = "\t", row.names = F)
 
     # return re-constructed seurat object
-    return(SeuratObject::CreateSeuratObject(counts = counts, meta.data = meta.data))
+    return(Seurat::CreateSeuratObject(counts = counts, meta.data = meta.data))
 }

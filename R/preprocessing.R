@@ -14,10 +14,10 @@ filter_genes <- function(seu_obj,
 ) {
     message("Caution: If there is SCT assay in your seurat object, it will be removed! You should re-run
             Seurat::sctransform() due to the change of library size.")
-    SeuratObject::DefaultAssay(seu_obj) <- "RNA"
+    Seurat::DefaultAssay(seu_obj) <- "RNA"
     if (!is.null(seu_obj@assays$SCT)) seu_obj[["SCT"]] <- NULL
 
-    counts <- SeuratObject::GetAssayData(seu_obj, slot = "counts", assay = "RNA") > 0
+    counts <- Seurat::GetAssayData(seu_obj, slot = "counts", assay = "RNA") > 0
     nCells <- Matrix::rowSums(counts)
     seu_obj <- seu_obj[nCells >= ncol(seu_obj) * percent_min / 100, ]
     print(paste("There were", nrow(counts), "genes before filtering, and", nrow(seu_obj), "left after filtering."))

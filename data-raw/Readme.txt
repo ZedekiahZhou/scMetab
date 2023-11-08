@@ -11,3 +11,6 @@ keggMetabDf:
 
 internal:
 	hgnc_20210601.txt: HGNC中gene symbol更新前后的对应表格；
+
+tcellSig:
+    cd4以及cd8 T细胞各个亚型的特征基因，该表来自于张泽民老师组2021年发表在Science上的[Pan-cancer T cell 文章](https://www.science.org/doi/full/10.1126/science.abe6474)的Table S3.

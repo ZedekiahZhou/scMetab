@@ -4,5 +4,4 @@
 .httr-oauth
 .DS_Store
 test/
-data-raw/tnbc.merged.rds
-data-raw/tnbc.merged.SCT.rds
+data-raw/

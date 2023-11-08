@@ -5,9 +5,10 @@
 \title{Pathway Correlation and P Value}
 \usage{
 pathway_correlation(
-  seu_obj,
+  seu_obj = NULL,
   assay = "AUCell",
   features = NULL,
+  df = NULL,
   cor_method = "spearman",
   glist = NULL
 )
@@ -18,6 +19,8 @@ pathway_correlation(
 \item{assay}{assay name of PAS, default is "AUCell"}
 
 \item{features}{pathways to calculate pair-wise correlation}
+
+\item{df}{provide a data frame of pathway scores instead of a seurat object}
 
 \item{cor_method}{one of "spearman" or "pearson", default is "spearman"}
 

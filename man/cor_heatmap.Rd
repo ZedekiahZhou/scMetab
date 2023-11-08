@@ -6,6 +6,7 @@
 \usage{
 cor_heatmap(
   seu_obj,
+  metab.df = NULL,
   reduction = NULL,
   metab.gene = NULL,
   dir.used = NULL,
@@ -17,11 +18,17 @@ cor_heatmap(
   cor_method = "spearman",
   n = 500,
   seed.use = NULL,
-  only.red = TRUE
+  only.red = TRUE,
+  clustering_method = "complete",
+  annotation_colors = NA,
+  width = 12,
+  height = 12
 )
 }
 \arguments{
 \item{seu_obj}{seurat object}
+
+\item{metab.df}{a data.frame contain matabolic genes used to calculate correlation}
 
 \item{reduction}{Reduction name to be used to calculate cell-to-cell correlation, must can be found
 in seu_obj. Default is NULL and metabolic gene expression will be used.}
@@ -48,6 +55,10 @@ be set to genes in gaudeMetabDf.}
 \item{seed.use}{random seed used for subsample.}
 
 \item{only.red}{only use red colors, default is TRUE}
+
+\item{clustering_method}{clustering method used, default is "complete", pass to hclust()}
+
+\item{annotation_colors}{annotation colors used}
 }
 \value{
 *.pdf plot file

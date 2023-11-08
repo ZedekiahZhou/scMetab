@@ -3,15 +3,20 @@
 \docType{data}
 \name{HallmarksDf}
 \alias{HallmarksDf}
+\alias{cancerHallmarksDf}
 \title{Cancer Hallmark Genes and Pathways from MSigDB.}
 \format{
 \describe{
 \item{GeneSymbol}{Gene symbol}
 \item{Pathway}{Pathway name}
 }
+
+An object of class \code{data.frame} with 1147 rows and 2 columns.
 }
 \usage{
 HallmarksDf
+
+cancerHallmarksDf
 }
 \description{
 Cancer Hallmark Genes and Pathways from MSigDB.

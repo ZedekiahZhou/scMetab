@@ -2,6 +2,74 @@
 # seurat on pas
 # ==================================================================================================
 
+#' Default Seurat Clustering Pipeline
+#'
+#' Packaging seurat default clustering pipeline in a single function.
+#'
+#' @param seu a Seurat object
+#' @param features Vector of features names to scale/center. Default is variable features.
+#' @param vars.to.regress variables to regress out. For example, nUMI, or precent.mt
+#' @param n_pcs number of PCs used. Default is 30
+#' @param useHarmony whether to use harmony to integrate cells from different source. Default is FALSE
+#' @param harmony.group.var var to integrate, must be specified if useHarmony is TRUE.
+#' @param max.iter.hamony maximum iterations for harmony
+#' @param reduction reduction used for dimensional reduction and clustering. Default is "pca". If
+#' useHarmony is TRUE, it will be set as "harmony"
+#' @param clustering do clustering or not. Default is TRUE.
+#' @param resolution resolution parameter for Seurat::FindClusters
+#' @param seed.use random seed used. Default is 2021
+#' @param useTSNE whether to do TSNE dimensional reduction. Default is TRUE
+#' @param verbose control verbosity. Default is TRUE
+#' @param fast_tsne_path for windows, specify the path of fastTSNE.exe
+#'
+#' @return A Seurat object with clustering done.
+#' @importFrom Seurat NormalizeData FindVariableFeatures ScaleData RunPCA
+#' @importFrom Seurat RunUMAP RunTSNE FindNeighbors FindClusters
+#' @importFrom harmony RunHarmony
+#' @export
+seurat_pipe <- function(seu,
+                        features = NULL,
+                        vars.to.regress = NULL,
+                        n_pcs = 30,
+                        useHarmony = FALSE,
+                        harmony.group.var = "samID",
+                        max.iter.hamony = 30,
+                        reduction = "pca",
+                        clustering = TRUE,
+                        resolution = c(0.2, 0.5, 0.8, 1.2),
+                        seed.use = 2021,
+                        useTSNE = TRUE,
+                        verbose = TRUE,
+                        fast_tsne_path = NULL) {
+    seu <- seu %>%
+        NormalizeData(verbose = verbose) %>%
+        FindVariableFeatures(verbose = verbose) %>%
+        ScaleData(verbose = verbose, vars.to.regress = vars.to.regress, features = features) %>%
+        RunPCA(npcs = n_pcs, verbose = verbose, seed.use = seed.use, features = features)
+
+    withr::local_seed(seed = seed.use)
+    if (useHarmony) {
+        seu <- RunHarmony(seu, group.by.vars = harmony.group.var, max.iter.hamony = max.iter.hamony)
+        reduction = "harmony"
+    }
+
+    seu <- RunUMAP(seu, reduction = reduction, dims = 1:n_pcs, verbose = verbose, seed.use = seed.use)
+
+    if (clustering) {
+        seu <- seu %>%
+            FindNeighbors(reduction = reduction, dims = 1:n_pcs, verbose = verbose) %>%
+            FindClusters(resolution = resolution, random.seed = seed.use, verbose = verbose)
+    }
+
+
+    if (useTSNE) {
+        seu <- RunTSNE(seu, reduction = reduction, dims = 1:n_pcs, verbose = verbose,
+                       seed.use = seed.use, tsne.method = "FIt-SNE", nthreads = 10,
+                       fast_tsne_path = fast_tsne_path)
+    }
+    return(seu)
+}
+
 
 #' Reorder Cluster Results of Seurat
 #'
@@ -15,6 +83,7 @@
 #' @param assay_name assay_name of cluster results
 #'
 #' @return a reorder seurat object
+#' @importFrom Seurat AddMetaData
 #' @export
 reorder_cluster_res <- function(seu_obj,
                                 resolution,
@@ -23,13 +92,13 @@ reorder_cluster_res <- function(seu_obj,
     cluster_res <- seu_obj[[paste0(assay_name, "_snn_res.", resolution)]]
     cluster_res <- lapply(cluster_res, function(x) {factor(as.integer(as.character(x)))})
     cluster_res <- data.frame(cluster_res, row.names = colnames(seu_obj))
-    return(Seurat::AddMetaData(seu_obj, cluster_res))
+    return(AddMetaData(seu_obj, cluster_res))
 }
 
 
 
 
-#' Title
+#' Assign Cell Type for Each Cluster According to Marker Expression
 #'
 #' @param markers cell type marker used for identification. A data frame with two columns, "Markers" & "Celltype"
 #' @param seu_obj seurat object used to identify cell type
@@ -97,6 +166,89 @@ celltype_assign <- function(markers,
 }
 
 
+#' Distinguish Malignant and Non-malignant Cells Iteratively
+#'
+#' @param seu_obj seurat object contain epithelial cells
+#' @param init_list Initial list of malignant and non_malignant features. A list with two elements
+#' named as "malignant" and "non_malignant", each contain 50 features.
+#' @param out_pdf pdf file for clustering plot of each iteration.
+#' @param max_iter maximum iterations, default is 20
+#' @param len_feature_list length of feature list to calculate score. Default if 50
+#' @param max.cells.per.ident max cells per ident for `Seurat::FindMarkers`, default is 2000
+#' @param error_rate is the portion of misclassified cell compared to last iteration if less than
+#' error_rate, then it is regarded as convergent.
+#'
+#' @details
+#' First, assign an initial malignant score and non-malignant score for each epithelial cell in
+#' `seu_obj` according to init_list via `Seurat::AddModuleScore`. Then, k-means clustering algorithm
+#' will be applied on the two scores to define malignant cells and non-malignant cells. Next,
+#' Differentially expressed genes between this putative malignant and non-malignant was identified
+#' as new features of malignant and non-malignant (50 features each). Finally, repeat the scoring
+#' and clustering iteratively until the portion of misclassified cells less than `error_rate`.
+#'
+#' @return a data.frame of clustering result for each iteration
+#' @export
+#'
+ident_malig <- function(seu_obj,
+                        init_list,
+                        out_pdf = "ident_malignant_iteration.pdf",
+                        max_iter = 20,
+                        len_feature_list = 50,
+                        max.cells.per.ident = 2000,
+                        error_rate = 0.001
+) {
+    # initial feature list for malignant and non-malignant
+    malig_list <- init_list
+    malig_res <- data.frame(row.names = colnames(seu_obj))
+    i <- 1
+
+    pdf(out_pdf, width = 16, height = 9)
+    while (i < max_iter) {
+        message(paste("Iteration", i))
+        seu_obj <- Seurat::AddModuleScore(seu_obj, features = malig_list, name = names(malig_list))
+        malig_scores <- seu_obj[[c("malignant1", "non_malignant2")]]
+        kres <- stats::kmeans(malig_scores, centers = 2)
+        if (kres$centers[1, "malignant1"] > kres$centers[1, "non_malignant2"]) {
+            seu_obj$malig_clu <- ifelse(kres$cluster[colnames(seu_obj)] == 1, "malignant", "non_malignant")
+        } else {
+            seu_obj$malig_clu <- ifelse(kres$cluster[colnames(seu_obj)] == 2, "malignant", "non_malignant")
+        }
+
+        malig_res <- cbind(malig_res, seu_obj$malig_clu)
+        colnames(malig_res) <- c(colnames(malig_res)[-ncol(malig_res)], paste0("Iter", i))
+        print(ggplot2::ggplot(seu_obj@meta.data, mapping = ggplot2::aes(x = .data$malignant1,
+                                                                        y = .data$non_malignant2,
+                                                                        col = .data$malig_clu)) +
+                  ggplot2::geom_point() +
+                  ggplot2::geom_abline(slope = 1, intercept = 0) +
+                  ggplot2::ggtitle(paste("Iter", i)) +
+                  ggplot2::theme_classic())
+
+        # check convergence
+        if (i > 1) {
+            gain <- sum(malig_res[, paste0("Iter", i)] != malig_res[, paste0("Iter", i-1)])/nrow(malig_res)
+            if (gain < error_rate) {
+                message(paste("Get convergence after", i, "iteration!"))
+                break
+            }
+        }
+
+        Seurat::Idents(seu_obj) <- "malig_clu"
+        malig_markers <- Seurat::FindMarkers(seu_obj, ident.1 = "malignant", ident.2 = "non_malignant",
+                                     max.cells.per.ident = max.cells.per.ident)
+        malig_markers <- malig_markers[order(abs(malig_markers$avg_log2FC), decreasing = T), ]
+        malig_list <- split(rownames(malig_markers), f = malig_markers$avg_log2FC < 0)
+        malig_list <- lapply(malig_list, function(x) x[1:min(length(x), len_feature_list)])
+        names(malig_list) <- c("malignant", "non_malignant")
+
+        i <- i+1
+    }
+    dev.off()
+    return(malig_res)
+}
+
+
+
 
 #' Seurat Clustering for Pathway Activity Score (PAS)
 #'
@@ -130,7 +282,7 @@ pathway_seurat_clustering <- function(pas,
     start_time <- Sys.time()
     print(paste("Begin seurat analysis at", start_time))
 
-    sc <- SeuratObject::CreateSeuratObject(t(pas), assay = "PAS")
+    sc <- Seurat::CreateSeuratObject(t(pas), assay = "PAS")
     sc <- sc %>%
         Seurat::ScaleData() %>%
         Seurat::FindVariableFeatures()

@@ -67,6 +67,7 @@ geom_split_violin <- function (mapping = NULL,
 #'
 #'
 #' @param seu_obj seurat object
+#' @param metab.df a data.frame contain matabolic genes used to calculate correlation
 #' @param reduction Reduction name to be used to calculate cell-to-cell correlation, must can be found
 #' in seu_obj. Default is NULL and metabolic gene expression will be used.
 #' @param metab.gene Metabolic gene symbols to be used (if reduction is null). If not specified, it will
@@ -81,10 +82,13 @@ geom_split_violin <- function (mapping = NULL,
 #' @param n number of cells to subsample for heatmap.
 #' @param seed.use random seed used for subsample.
 #' @param only.red only use red colors, default is TRUE
+#' @param clustering_method clustering method used, default is "complete", pass to hclust()
+#' @param annotation_colors annotation colors used
 #'
 #' @return *.pdf plot file
 #' @export
 cor_heatmap <- function(seu_obj,
+                        metab.df = NULL,
                         reduction = NULL,
                         metab.gene = NULL,
                         dir.used = NULL,
@@ -96,9 +100,11 @@ cor_heatmap <- function(seu_obj,
                         cor_method = "spearman",
                         n = 500,
                         seed.use = NULL,
-                        only.red = TRUE
+                        only.red = TRUE,
+                        clustering_method = "complete",
+                        annotation_colors = NA,
+                        width = 12, height = 12, use_raster = T
 ) {
-    metab.df <- gaudeMetabDf
     metab.gene <- intersect(unique(metab.df$GeneSymbol), rownames(seu_obj))
 
     if (is.null(reduction)) {
@@ -121,21 +127,72 @@ cor_heatmap <- function(seu_obj,
         mycolor = grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "RdYlBu")))(100)
     }
 
-    pdf(tmpfile, width = 12, height = 12)
+    pdf(tmpfile, width = width, height = height)
     for (used_split in unique(seu_obj[[split.by, drop = TRUE]])) {
         print(paste("Plot for", used_split))
         cand_cells <- colnames(seu_obj)[seu_obj[[split.by, drop = TRUE]] == used_split]
         cells <- sample(cand_cells, size = min(length(cand_cells), n))
-        annotation_col <- Seurat::FetchData(seu_obj, vars = vars)[cells, ]
+        annotation_col <- Seurat::FetchData(seu_obj, vars = setdiff(vars, split.by))[cells, ]
         cor.data <- stats::cor(as.matrix(metab.data[, cells]), method = cor_method)
         diag(cor.data) <- 0
 
         print(pheatmap::pheatmap(cor.data, annotation_col = annotation_col, annotation_row = annotation_col,
                        show_rownames = FALSE, show_colnames = FALSE,
-                       color = mycolor,
+                       color = mycolor, clustering_method = clustering_method,
+                       annotation_colors = annotation_colors,
                        main = used_split))
+        row_ha <- ComplexHeatmap::rowAnnotation(df = meta_info[cells, , drop = FALSE])
+        print(ComplexHeatmap::Heatmap(cor.data, col = mycolor,
+                                use_raster = use_raster, raster_by_magick = FALSE,
+                                name = used_split,
+                                left_annotation = row_ha, top_annotation = row_ha,
+                                cluster_columns = T, cluster_rows = T,
+                                show_column_names = FALSE, show_row_names = FALSE))
     }
     dev.off()
+}
+
+#' CNV Heatmap
+#'
+#' @param infercnv infercnv object
+#' @param meta_info cell meta info
+#' @param split.by column names in meta_info to split cells, prior to group.by
+#' @param group.by column names in meta_info to group cells
+#' @param max.cells.per.ident maximum cells per identity to plot
+#' @param cluster_rows whether to cluster rows for heatmap
+#' @param use_raster whether use raster
+#' @param name plot name
+#'
+#' @return a ComplexHeatmap plot
+#' @importFrom grid unit
+#' @export
+plotCNV <- function(infercnv,
+                    meta_info,
+                    split.by,
+                    group.by = NULL,
+                    max.cells.per.ident = 100,
+                    cluster_rows = FALSE,
+                    use_raster = FALSE,
+                    name = "CNV scores"
+) {
+    cnv_color <- RColorBrewer::brewer.pal(11, "RdBu")[c(10, 6, 2)]
+    color_fun <- circlize::colorRamp2(c(0.9, 1, 1.1), cnv_color)
+
+    cell.list = split(rownames(meta_info), f = meta_info[split.by])
+    cells <- lapply(cell.list, function(x) sample(x, min(length(x), max.cells.per.ident)))
+    cells <- do.call(c, cells)
+    row_ha <- ComplexHeatmap::rowAnnotation(df = meta_info[cells, , drop = FALSE])
+    plot_data <- t(infercnv@expr.data[, cells])
+
+    p <- ComplexHeatmap::Heatmap(plot_data, col = color_fun,
+                 use_raster = use_raster, raster_by_magick = FALSE,
+                 border = TRUE, name = name,
+                 left_annotation = row_ha,
+                 column_split = as.integer(sub("chr", "", infercnv@gene_order$chr)), column_gap = unit(0, "mm"),
+                 row_split = meta_info[cells, split.by], row_gap = unit(0, "mm"),
+                 cluster_columns = FALSE, cluster_rows = cluster_rows,
+                 show_column_names = FALSE, show_row_names = FALSE)
+    print(p)
 }
 
 

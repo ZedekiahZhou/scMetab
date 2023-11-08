@@ -2,7 +2,7 @@
 % Please edit documentation in R/clustering.R
 \name{celltype_assign}
 \alias{celltype_assign}
-\title{Title}
+\title{Assign Cell Type for Each Cluster According to Marker Expression}
 \usage{
 celltype_assign(
   markers,
@@ -28,7 +28,7 @@ If cell_score_method is "raw", use "freq" as default, see detail.}
 a data frame annotate each cluster to cell types
 }
 \description{
-Title
+Assign Cell Type for Each Cluster According to Marker Expression
 }
 \details{
 For cell_score_method "binary", use data slot of seu_obj. Cells were scored as 1 if it expresses a marker (eg. counts > 0),
