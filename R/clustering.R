@@ -38,6 +38,7 @@ seurat_pipe <- function(seu,
                         clustering = TRUE,
                         resolution = c(0.2, 0.5, 0.8, 1.2),
                         seed.use = 2021,
+                        useUMAP = TRUE,
                         useTSNE = TRUE,
                         verbose = TRUE,
                         fast_tsne_path = NULL) {
@@ -53,14 +54,15 @@ seurat_pipe <- function(seu,
         reduction = "harmony"
     }
 
-    seu <- RunUMAP(seu, reduction = reduction, dims = 1:n_pcs, verbose = verbose, seed.use = seed.use)
-
     if (clustering) {
         seu <- seu %>%
             FindNeighbors(reduction = reduction, dims = 1:n_pcs, verbose = verbose) %>%
             FindClusters(resolution = resolution, random.seed = seed.use, verbose = verbose)
     }
 
+    if (useUMAP) {
+        seu <- RunUMAP(seu, reduction = reduction, dims = 1:n_pcs, verbose = verbose, seed.use = seed.use)
+    }
 
     if (useTSNE) {
         seu <- RunTSNE(seu, reduction = reduction, dims = 1:n_pcs, verbose = verbose,

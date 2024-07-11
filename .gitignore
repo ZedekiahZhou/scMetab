@@ -4,4 +4,4 @@
 .httr-oauth
 .DS_Store
 test/
-data-raw/
+data-raw/*
